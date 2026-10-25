@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>סידור עבודה</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <link rel="icon" type="image/png" href="icons/icon-192.png">
+
+  <!-- iPhone -->
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="סידור עבודה">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+  <style>
+    html, body { margin: 0; height: 100%; background: #ffffff; overflow: hidden; }
+    body { font-family: system-ui, -apple-system, "Segoe UI", Arial, sans-serif; }
+    #app {
+      position: fixed;
+      top: env(safe-area-inset-top); bottom: env(safe-area-inset-bottom);
+      left: 0; right: 0;
+      width: 100%; height: calc(100% - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+      border: 0;
+    }
+    .overlay {
+      position: fixed; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 16px;
+      background: #ffffff; color: #1e293b; text-align: center; padding: 24px;
+      transition: opacity .3s;
+    }
+    .overlay img { width: 96px; height: 96px; border-radius: 22px; }
+    .spinner {
+      width: 32px; height: 32px; border: 4px solid #cbd5e1;
+      border-top-color: #2563eb; border-radius: 50%; animation: spin 1s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .hidden { opacity: 0; pointer-events: none; }
+    button {
+      font: inherit; background: #2563eb; color: #fff; border: 0;
+      border-radius: 10px; padding: 12px 24px;
+    }
+  </style>
+</head>
+<body>
+  <iframe id="app" title="סידור עבודה" allow="clipboard-write"></iframe>
+
+  <div id="loading" class="overlay">
+    <img src="icons/icon-192.png" alt="">
+    <div class="spinner"></div>
+    <div>טוען את הסידור…</div>
+  </div>
+
+  <div id="offline" class="overlay hidden">
+    <img src="icons/icon-192.png" alt="">
+    <div>אין חיבור לאינטרנט.<br>הסידור ייטען כשהחיבור יחזור.</div>
+    <button onclick="location.reload()">נסה שוב</button>
+  </div>
+
+  <script>
+    // ⬇️ להדביק כאן את כתובת ה-Web App של Apps Script (מסתיימת ב-/exec)
+    const APP_URL = 'https://script.google.com/macros/s/AKfycbz-BF7JYfO3VNb1MoERwcwiHjii9S2dLspdu07Bml9KJnnf3n135eEvpMo4gKh2-qLM8g/exec';
+
+    const frame = document.getElementById('app');
+    const loading = document.getElementById('loading');
+    const offline = document.getElementById('offline');
+
+    function load() {
+      if (!navigator.onLine) { offline.classList.remove('hidden'); loading.classList.add('hidden'); return; }
+      offline.classList.add('hidden');
+      frame.src = APP_URL;
+    }
+    frame.addEventListener('load', () => loading.classList.add('hidden'));
+    window.addEventListener('online', () => { loading.classList.remove('hidden'); load(); });
+    window.addEventListener('offline', () => offline.classList.remove('hidden'));
+
+    // רענון אוטומטי כשחוזרים לאפליקציה אחרי זמן ארוך (כדי לראות סידור עדכני)
+    let hiddenAt = 0;
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) { hiddenAt = Date.now(); return; }
+      if (hiddenAt && Date.now() - hiddenAt > 30 * 60 * 1000) frame.src = APP_URL;
+    });
+
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+    load();
+  </script>
+</body>
+</html>
